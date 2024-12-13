@@ -73,3 +73,72 @@ Este projeto implementa um chatbot interativo utilizando o modelo Gemini 1.5 Fla
      ```bash
      curl -X POST http://127.0.0.1:5000/chat -H "Content-Type: application/json" -d "{"message": "Olá, como você está?"}"
      ```
+
+# Exemplos de Uso
+
+1. **Personalização para um Domínio (Atendimento ao Cliente)**
+
+- Adicione uma camada de personalização ao prompt para o domínio de atendimento ao cliente. Modifique o endpoint /chat para incluir um "sistema" que guie o modelo.
+
+```bash
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message')
+    if not user_input:
+        return jsonify({'error': 'Mensagem não fornecida'}), 400
+
+    # Prompt personalizado para o domínio de atendimento ao cliente
+    prompt = f"""
+    Você é um chatbot de atendimento ao cliente para uma loja de eletrônicos.
+    Responda as dúvidas dos clientes de forma educada e precisa.
+    Pergunta: {user_input}
+    """
+
+    # Envio do prompt ao modelo
+    response = model.generate_text(prompt)
+    return jsonify({'response': response.text})
+```
+
+- Como testar: Envie uma requisição com o nome de uma cidade:
+
+```bash
+curl -X POST http://127.0.0.1:5000/chat -H "Content-Type: application/json" -d "{"message": "Vocês trabalham com troca de fonte de Computador?"}"
+```
+
+2. **Integração com API de Terceiros (Consulta de Clima)**
+
+- Adicione um endpoint adicional para integrar o chatbot com uma API pública, como a [OpenWeatherMap](https://openweathermap.org/) API. Suponha que você já tenha uma chave da API.
+
+```bash
+import requests
+
+@app.route('/weather', methods=['POST'])
+def get_weather():
+    city = request.json.get('city')
+    if not city:
+        return jsonify({'error': 'Cidade não fornecida'}), 400
+
+    # Substitua 'sua_chave_api' pela sua chave da OpenWeatherMap
+    api_key = "sua_chave_api"
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric&lang=pt_br"
+
+    # Realizar a requisição para a API
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        weather = data['weather'][0]['description']
+        temp = data['main']['temp']
+        return jsonify({
+            'city': city,
+            'weather': weather,
+            'temperature': f"{temp} °C"
+        })
+    else:
+        return jsonify({'error': 'Não foi possível obter o clima'}), 400
+```
+
+- Como testar: Envie uma requisição com o nome de uma cidade:
+
+```bash
+curl -X POST http://127.0.0.1:5000/weather -H "Content-Type: application/json" -d "{"city": "Porto Alegre"}"
+```
